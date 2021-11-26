@@ -16,17 +16,32 @@
 
 set -e
 
-#go get github.com/golang/protobuf/proto
-#go get github.com/golang/protobuf/protoc-gen-go
+go get google.golang.org/protobuf/cmd/protoc-gen-go
 
 if [ -z "${GOPATH}" ]
 then
   GOPATH=$(go env GOPATH)
 fi
 
+if [ -z "${GOOS}" ]
+then
+  GOOS=$(go env GOOS)
+fi
+
+# convert GOPATH's Windows style to UNIX style
+if [[ $GOOS == "windows" ]]; then
+  # eg: convert "D:\go-14;D:\go-13" to "D\go-14;D\go-13"
+  GOPATH=${GOPATH//:\\/\\}
+  # eg: convert "D\go-14;D\go-13" to "\D\go-14:\D\go-13"
+  GOPATH=\\${GOPATH//;/:\\}
+  # eg: convert "\D\go-14:\D\go-13" to "/D/go-14:/D/go-13"
+  GOPATH=${GOPATH//\\/\/}
+fi
+
 cd $(dirname $0)
 for g in $(echo "${GOPATH//:/ }"); do
-    TF_DIR="${g}/src/github.com/tensorflow/tensorflow"
+    TF_DIR="/Users/appaquet/.asdf/installs/golang/1.17.3/packages/pkg/mod/github.com/tensorflow/tensorflow@v2.7.0+incompatible"
+    #TF_DIR="${g}/mod/github.com/tensorflow/tensorflow@v2.7.0+incompatible/tensorflow"
     PROTOC="${TF_DIR}/bazel-out/host/bin/external/protobuf/protoc"
     if [ -x "${PROTOC}" ]; then
         break
@@ -55,6 +70,7 @@ mkdir -p ../vendor
 for FILE in ${TF_DIR}/tensorflow/core/framework/*.proto \
     ${TF_DIR}/tensorflow/core/protobuf/*.proto \
     ${TF_DIR}/tensorflow/stream_executor/*.proto; do
+  echo $FILE
   ${PROTOC} \
     -I ${TF_DIR} \
     --go_out=../vendor \
